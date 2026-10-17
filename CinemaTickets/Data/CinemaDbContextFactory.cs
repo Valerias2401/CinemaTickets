@@ -10,7 +10,7 @@ namespace CinemaTickets.Data
             var optionsBuilder = new DbContextOptionsBuilder<CinemaDbContext>();
 
             optionsBuilder.UseNpgsql(
-                "Host=localhost;Port=5432;Database=cinema_tickets;Username=postgres;Password=love"
+                "Host=localhost;Port=5432;Database=cinema_tickets;Username=postgres;Password=1234"
             );
 
             return new CinemaDbContext(optionsBuilder.Options);
