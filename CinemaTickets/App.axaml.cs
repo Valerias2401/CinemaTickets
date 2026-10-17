@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using CinemaTickets.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace CinemaTickets
 {
@@ -13,9 +15,17 @@ namespace CinemaTickets
 
         public override void OnFrameworkInitializationCompleted()
         {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            if (ApplicationLifetime is
+        IClassicDesktopStyleApplicationLifetime desktop)
             {
-                desktop.MainWindow = new MainWindow();
+                desktop.MainWindow = new MainWindow(() =>
+                {
+                    var options =
+                        new DbContextOptionsBuilder<CinemaDbContext>()
+                            .Options;
+
+                    return new CinemaDbContext(options);
+                });
             }
 
             base.OnFrameworkInitializationCompleted();

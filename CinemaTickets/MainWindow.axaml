@@ -28,7 +28,10 @@
         </Style>
 
         <Style Selector="Button.movieAction:pointerover">
-            <Setter Property="Background" Value="#831843"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#BE185D"/>
+            <Setter Property="BorderBrush" Value="#BE185D"/>
+            <Setter Property="BorderThickness" Value="1"/>
         </Style>
 
     </Window.Styles>

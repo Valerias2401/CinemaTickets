@@ -1,90 +1,45 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Microsoft.EntityFrameworkCore;
 using CinemaTickets.Models;
 
 namespace CinemaTickets;
 
 public partial class MainWindow : Window
 {
+    private readonly Func<DbContext> _createDb;
+
+    private readonly List<Movie> movies = new();
+
     private Movie? selectedMovie;
 
-    private readonly List<Movie> movies = new()
-    {
-        new Movie
-        {
-            Id = 1,
-            Title = "Интерстеллар",
-            Genre = "Фантастика",
-            DurationMinutes = 169,
-            ReleaseYear = 2014
-        },
-        new Movie
-        {
-            Id = 2,
-            Title = "Начало",
-            Genre = "Триллер",
-            DurationMinutes = 148,
-            ReleaseYear = 2010
-        },
-        new Movie
-        {
-            Id = 3,
-            Title = "Дюна",
-            Genre = "Фантастика",
-            DurationMinutes = 155,
-            ReleaseYear = 2021
-        }
-    };
-    private readonly List<Session> sessions = new()
-    {
-        new Session
-        {
-            Id = 1,
-            MovieId = 1,
-            StartTime = DateTime.Today.AddDays(1).AddHours(15),
-            TicketPrice = 350
-        },
-        new Session
-        {
-            Id = 2,
-            MovieId = 1,
-            StartTime = DateTime.Today.AddDays(1).AddHours(19),
-            TicketPrice = 450
-        },
-        new Session
-        {
-            Id = 3,
-            MovieId = 2,
-            StartTime = DateTime.Today.AddDays(1).AddHours(17),
-            TicketPrice = 400
-        },
-        new Session
-        {
-            Id = 4,
-            MovieId = 3,
-            StartTime = DateTime.Today.AddDays(2).AddHours(20),
-            TicketPrice = 500
-        }
-    };
+    private int navigationVersion = 0;
 
-    public MainWindow()
+    public MainWindow(Func<DbContext> createDb)
     {
+        _createDb = createDb;
+
         InitializeComponent();
-        ShowMovies();
+
+        Opened += async (_, _) =>
+        {
+            await ShowMoviesAsync();
+        };
     }
 
-    private static IBrush Brush(string hex)
+    private static IBrush Pink(string color)
     {
-        return new SolidColorBrush(Color.Parse(hex));
+        return new SolidColorBrush(Color.Parse(color));
     }
-
 
     private static IBrush PosterBrush(int movieId)
     {
@@ -116,17 +71,16 @@ public partial class MainWindow : Window
                 1, 1, RelativeUnit.Relative),
 
             GradientStops = new GradientStops
-        {
-            new GradientStop(Color.Parse(color1), 0),
-            new GradientStop(Color.Parse(color2), 1)
-        }
+            {
+                new GradientStop(Color.Parse(color1), 0),
+                new GradientStop(Color.Parse(color2), 1)
+            }
         };
     }
 
-
     private void SetActiveButton(Button active)
     {
-        var buttons = new[]
+        Button[] buttons =
         {
             MoviesButton,
             SessionsButton,
@@ -136,10 +90,10 @@ public partial class MainWindow : Window
         foreach (var button in buttons)
         {
             button.Background = Brushes.Transparent;
-            button.Foreground = Brush("#965A7A");
+            button.Foreground = Pink("#965A7A");
         }
 
-        active.Background = Brush("#9D174D");
+        active.Background = Pink("#9D174D");
         active.Foreground = Brushes.White;
     }
 
@@ -149,36 +103,47 @@ public partial class MainWindow : Window
         Button activeButton)
     {
         SectionTitle.Text = title;
+        SectionSubtitle.Text = subtitle;
 
         SetActiveButton(activeButton);
     }
 
-    private void Movies_Click(
-        object? sender, RoutedEventArgs e)
+    private async void Movies_Click(
+        object? sender,
+        RoutedEventArgs e)
     {
-        ShowMovies();
+        await ShowMoviesAsync();
     }
 
-    private void Sessions_Click(
-        object? sender, RoutedEventArgs e)
+    private async void Sessions_Click(
+        object? sender,
+        RoutedEventArgs e)
     {
         if (selectedMovie == null)
         {
-            ShowMovies();
+            await ShowMoviesAsync();
+
+            ResultsText.Text =
+                "Сначала выберите фильм для просмотра сеансов.";
+
             return;
         }
 
-        ShowSessions(selectedMovie);
+        await ShowSessionsAsync(selectedMovie);
     }
 
     private void Tickets_Click(
-        object? sender, RoutedEventArgs e)
+        object? sender,
+        RoutedEventArgs e)
     {
         ShowTickets();
     }
 
-    private void ShowMovies()
+
+    private async Task ShowMoviesAsync()
     {
+        int request = ++navigationVersion;
+
         SetPage(
             "Афиша",
             "Выбирай историю по настроению",
@@ -187,23 +152,62 @@ public partial class MainWindow : Window
         MoviesPage.IsVisible = true;
         PageHost.IsVisible = false;
 
-        RenderMovies();
+        ResultsText.Text = "Загрузка фильмов...";
+        MoviesPanel.Children.Clear();
+
+        try
+        {
+            await using var db = _createDb();
+
+            var loadedMovies = await db.Set<Movie>()
+                .AsNoTracking()
+                .OrderBy(m => m.Title)
+                .ToListAsync();
+
+            if (request != navigationVersion)
+                return;
+
+            movies.Clear();
+            movies.AddRange(loadedMovies);
+
+            RenderMovies();
+        }
+        catch (Exception ex)
+        {
+            if (request != navigationVersion)
+                return;
+
+            Debug.WriteLine(ex);
+
+            ResultsText.Text = "Ошибка загрузки";
+
+            MoviesPanel.Children.Clear();
+
+            MoviesPanel.Children.Add(
+                CreateMessage(
+                    "Не удалось загрузить фильмы. " +
+                    "Проверьте подключение к PostgreSQL."));
+        }
     }
 
     private void SearchBox_TextChanged(
         object? sender,
         TextChangedEventArgs e)
     {
-        if (MoviesPanel != null)
+        if (MoviesPanel != null &&
+            ResultsText != null &&
+            MoviesPage != null &&
+            MoviesPage.IsVisible)
+        {
             RenderMovies();
+        }
     }
 
     private void RenderMovies()
     {
         MoviesPanel.Children.Clear();
 
-        string search = SearchBox.Text?
-            .Trim() ?? "";
+        string search = SearchBox.Text?.Trim() ?? "";
 
         var filtered = movies
             .Where(m => m.Title.Contains(
@@ -216,13 +220,8 @@ public partial class MainWindow : Window
 
         if (filtered.Count == 0)
         {
-            MoviesPanel.Children.Add(new TextBlock
-            {
-                Text = "По вашему запросу фильмы не найдены.",
-                FontSize = 15,
-                Foreground = Brush("#965A7A"),
-                Margin = new Thickness(0, 20)
-            });
+            MoviesPanel.Children.Add(
+                CreateMessage("Фильмы не найдены."));
 
             return;
         }
@@ -241,42 +240,26 @@ public partial class MainWindow : Window
             Width = 266,
             Background = Brushes.White,
             CornerRadius = new CornerRadius(18),
-            BorderBrush = Brush("#F1DCE7"),
+            BorderBrush = Pink("#F1DCE7"),
             BorderThickness = new Thickness(1),
             ClipToBounds = true,
             Margin = new Thickness(0, 0, 18, 18)
         };
 
-        var content = new StackPanel
-        {
-            Spacing = 0
-        };
+        var content = new StackPanel();
 
         var poster = new Grid
         {
             Height = 156,
-            Background = PosterBrush(movie.Id),
-            ClipToBounds = true
+            Background = PosterBrush(movie.Id)
         };
-
-        poster.Children.Add(new Border
-        {
-            Width = 145,
-            Height = 145,
-            CornerRadius = new CornerRadius(75),
-            Background = Brush("#FFFFFF"),
-            Opacity = 0.10,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, -35, -30, 0)
-        });
 
         poster.Children.Add(new TextBlock
         {
-            Text = $"PINK CINEMA  /  {movie.ReleaseYear}",
+            Text = $"PINK CINEMA / {movie.ReleaseYear}",
             FontSize = 11,
             FontWeight = FontWeight.SemiBold,
-            Foreground = Brush("#FFE4F2"),
+            Foreground = Pink("#FFE4F2"),
             Margin = new Thickness(18, 17, 0, 0),
             VerticalAlignment = VerticalAlignment.Top
         });
@@ -284,10 +267,12 @@ public partial class MainWindow : Window
         poster.Children.Add(new TextBlock
         {
             Text = movie.Title,
-            FontSize = 27,
+            FontSize = 24,
             FontWeight = FontWeight.Bold,
             Foreground = Brushes.White,
-            TextWrapping = TextWrapping.Wrap,
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxLines = 1,
             Margin = new Thickness(18),
             VerticalAlignment = VerticalAlignment.Bottom
         });
@@ -297,7 +282,7 @@ public partial class MainWindow : Window
         var information = new StackPanel
         {
             Margin = new Thickness(16),
-            Spacing = 12
+            Spacing = 11
         };
 
         information.Children.Add(new TextBlock
@@ -305,24 +290,38 @@ public partial class MainWindow : Window
             Text = movie.Title,
             FontSize = 18,
             FontWeight = FontWeight.Bold,
-            Foreground = Brush("#831843"),
-            TextWrapping = TextWrapping.Wrap
+            Foreground = Pink("#831843"),
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxLines = 1
         });
 
         information.Children.Add(new TextBlock
         {
             Text =
-                $"{movie.Genre}  •  {movie.DurationMinutes} мин",
+                $"{movie.Genre} • {movie.DurationMinutes} мин",
             FontSize = 12,
-            Foreground = Brush("#AD648A"),
-            TextWrapping = TextWrapping.Wrap
+            Foreground = Pink("#AD648A")
         });
 
-        var actionButton = new Button
+        if (!string.IsNullOrWhiteSpace(movie.Description))
         {
-            Content = "Смотреть сеансы  →",
+            information.Children.Add(new TextBlock
+            {
+                Text = movie.Description,
+                FontSize = 12,
+                Foreground = Pink("#965A7A"),
+                TextWrapping = TextWrapping.NoWrap,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                MaxLines = 1
+            });
+        }
+
+        var button = new Button
+        {
+            Content = "Смотреть сеансы →",
             Height = 42,
-            Background = Brush("#BE185D"),
+            Background = Pink("#BE185D"),
             Foreground = Brushes.White,
             FontSize = 13,
             FontWeight = FontWeight.SemiBold,
@@ -331,23 +330,27 @@ public partial class MainWindow : Window
             HorizontalContentAlignment = HorizontalAlignment.Center
         };
 
-        actionButton.Classes.Add("movieAction");
+        button.Classes.Add("movieAction");
 
-        actionButton.Click += (_, _) =>
+        button.Click += async (_, _) =>
         {
-            ShowSessions(movie);
+            await ShowSessionsAsync(movie);
         };
 
-        information.Children.Add(actionButton);
+        information.Children.Add(button);
 
         content.Children.Add(information);
+
         card.Child = content;
 
         return card;
     }
 
-    public void ShowSessions(Movie movie)
+
+    public async Task ShowSessionsAsync(Movie movie)
     {
+        int request = ++navigationVersion;
+
         selectedMovie = movie;
 
         SetPage(
@@ -358,85 +361,98 @@ public partial class MainWindow : Window
         MoviesPage.IsVisible = false;
         PageHost.IsVisible = true;
 
-        var movieSessions = sessions
-            .Where(s => s.MovieId == movie.Id)
-            .OrderBy(s => s.StartTime)
-            .ToList();
+        PageHost.Content = CreateMessage(
+            "Загружаем расписание...");
 
-        var view = new SessionsView(movie, movieSessions);
+        try
+        {
+            await using var db = _createDb();
 
-        view.SeatSelectionRequested += ShowSeats;
+            var movieSessions = await db.Set<Session>()
+                .AsNoTracking()
+                .Where(s => s.MovieId == movie.Id)
+                .OrderBy(s => s.StartTime)
+                .ToListAsync();
 
-        PageHost.Content = view;
+            if (request != navigationVersion)
+                return;
+
+            var view = new SessionsView(
+                movie,
+                movieSessions);
+
+            view.SeatSelectionRequested += ShowSeats;
+
+            PageHost.Content = view;
+        }
+        catch (Exception ex)
+        {
+            if (request != navigationVersion)
+                return;
+
+            Debug.WriteLine(ex);
+
+            PageHost.Content = CreateMessage(
+                "Не удалось загрузить сеансы. " +
+                "Проверьте подключение к PostgreSQL.");
+        }
     }
+
 
     private void ShowSeats(Session session)
     {
+        navigationVersion++;
+
         SectionTitle.Text = "Выбор места";
+
         SectionSubtitle.Text =
             $"Сеанс {session.StartTime:dd.MM.yyyy HH:mm}";
 
         MoviesPage.IsVisible = false;
         PageHost.IsVisible = true;
 
-        // Позже здесь будет SeatsView Вики
-        PageHost.Content = CreatePlaceholder(
-            "Выбор места",
-            "Здесь появится схема зала 5×8.\n" +
-            $"Стоимость билета: {session.TicketPrice:0.00} ₽");
+        // Позже подключим SeatsView Вики
+        PageHost.Content = CreateMessage(
+            $"Выбран сеанс: {session.StartTime:dd.MM.yyyy HH:mm}\n" +
+            $"Цена билета: {session.TicketPrice:0.00} ₽\n\n" +
+            "Здесь будет схема зала 5×8.");
     }
+
 
     private void ShowTickets()
     {
+        navigationVersion++;
+
         SetPage(
-            "Мои билеты",
-            "История покупок",
+            "Билеты",
+            "Все купленные билеты",
             TicketsButton);
 
         MoviesPage.IsVisible = false;
         PageHost.IsVisible = true;
 
-        // Позже здесь будет TicketsView Алсу
-        PageHost.Content = CreatePlaceholder(
-            "Пока нет билетов",
-            "Здесь будут отображаться купленные билеты.");
+        // Позже подключим TicketsView Алсу
+        PageHost.Content = CreateMessage(
+            "Здесь будет список купленных билетов.");
     }
 
-    private Control CreatePlaceholder(
-        string title,
-        string description)
+    private Control CreateMessage(string message)
     {
-        var panel = new StackPanel
-        {
-            Spacing = 12,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        panel.Children.Add(new TextBlock
-        {
-            Text = title,
-            FontSize = 25,
-            FontWeight = FontWeight.Bold,
-            Foreground = Brush("#831843"),
-            TextAlignment = TextAlignment.Center
-        });
-
-        panel.Children.Add(new TextBlock
-        {
-            Text = description,
-            FontSize = 15,
-            Foreground = Brush("#AD648A"),
-            TextAlignment = TextAlignment.Center,
-            TextWrapping = TextWrapping.Wrap
-        });
-
         return new Border
         {
             Background = Brushes.White,
-            CornerRadius = new CornerRadius(20),
-            Padding = new Thickness(35),
-            Child = panel
+            CornerRadius = new CornerRadius(16),
+            Padding = new Thickness(25),
+
+            Child = new TextBlock
+            {
+                Text = message,
+                FontSize = 17,
+                Foreground = Pink("#9D174D"),
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            }
         };
     }
 }
