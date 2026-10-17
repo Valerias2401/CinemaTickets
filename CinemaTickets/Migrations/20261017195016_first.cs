@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CinemaTickets.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class first : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -51,8 +51,7 @@ namespace CinemaTickets.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     MovieId = table.Column<int>(type: "integer", nullable: false),
                     StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    TicketPrice = table.Column<decimal>(type: "numeric", nullable: false),
-                    MovieId1 = table.Column<int>(type: "integer", nullable: true)
+                    TicketPrice = table.Column<decimal>(type: "numeric", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -63,11 +62,6 @@ namespace CinemaTickets.Migrations
                         principalTable: "Movies",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Sessions_Movies_MovieId1",
-                        column: x => x.MovieId1,
-                        principalTable: "Movies",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -78,9 +72,7 @@ namespace CinemaTickets.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     SessionId = table.Column<int>(type: "integer", nullable: false),
                     SeatId = table.Column<int>(type: "integer", nullable: false),
-                    PurchaseTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    SeatId1 = table.Column<int>(type: "integer", nullable: true),
-                    SessionId1 = table.Column<int>(type: "integer", nullable: true)
+                    PurchaseTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -92,21 +84,11 @@ namespace CinemaTickets.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Tickets_Seats_SeatId1",
-                        column: x => x.SeatId1,
-                        principalTable: "Seats",
-                        principalColumn: "Id");
-                    table.ForeignKey(
                         name: "FK_Tickets_Sessions_SessionId",
                         column: x => x.SessionId,
                         principalTable: "Sessions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Tickets_Sessions_SessionId1",
-                        column: x => x.SessionId1,
-                        principalTable: "Sessions",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -115,29 +97,15 @@ namespace CinemaTickets.Migrations
                 columns: new[] { "MovieId", "StartTime" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Sessions_MovieId1",
-                table: "Sessions",
-                column: "MovieId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Tickets_SeatId",
                 table: "Tickets",
                 column: "SeatId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tickets_SeatId1",
+                name: "IX_Tickets_SessionId_SeatId",
                 table: "Tickets",
-                column: "SeatId1");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Tickets_SessionId",
-                table: "Tickets",
-                column: "SessionId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Tickets_SessionId1",
-                table: "Tickets",
-                column: "SessionId1");
+                columns: new[] { "SessionId", "SeatId" },
+                unique: true);
         }
 
         /// <inheritdoc />

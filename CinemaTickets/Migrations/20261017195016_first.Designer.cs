@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CinemaTickets.Migrations
 {
     [DbContext(typeof(CinemaDbContext))]
-    [Migration("20261015235743_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20261017195016_first")]
+    partial class first
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -86,9 +86,6 @@ namespace CinemaTickets.Migrations
                     b.Property<int>("MovieId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("MovieId1")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -96,8 +93,6 @@ namespace CinemaTickets.Migrations
                         .HasColumnType("numeric");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("MovieId1");
 
                     b.HasIndex("MovieId", "StartTime");
 
@@ -118,24 +113,15 @@ namespace CinemaTickets.Migrations
                     b.Property<int>("SeatId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("SeatId1")
-                        .HasColumnType("integer");
-
                     b.Property<int>("SessionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("SessionId1")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("SeatId");
 
-                    b.HasIndex("SeatId1");
-
-                    b.HasIndex("SessionId");
-
-                    b.HasIndex("SessionId1");
+                    b.HasIndex("SessionId", "SeatId")
+                        .IsUnique();
 
                     b.ToTable("Tickets");
                 });
@@ -143,14 +129,10 @@ namespace CinemaTickets.Migrations
             modelBuilder.Entity("CinemaTickets.Models.Session", b =>
                 {
                     b.HasOne("CinemaTickets.Models.Movie", "Movie")
-                        .WithMany()
+                        .WithMany("Sessions")
                         .HasForeignKey("MovieId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("CinemaTickets.Models.Movie", null)
-                        .WithMany("Sessions")
-                        .HasForeignKey("MovieId1");
 
                     b.Navigation("Movie");
                 });
@@ -158,24 +140,16 @@ namespace CinemaTickets.Migrations
             modelBuilder.Entity("CinemaTickets.Models.Ticket", b =>
                 {
                     b.HasOne("CinemaTickets.Models.Seat", "Seat")
-                        .WithMany()
+                        .WithMany("Tickets")
                         .HasForeignKey("SeatId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("CinemaTickets.Models.Seat", null)
-                        .WithMany("Tickets")
-                        .HasForeignKey("SeatId1");
-
                     b.HasOne("CinemaTickets.Models.Session", "Session")
-                        .WithMany()
+                        .WithMany("Tickets")
                         .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("CinemaTickets.Models.Session", null)
-                        .WithMany("Tickets")
-                        .HasForeignKey("SessionId1");
 
                     b.Navigation("Seat");
 
