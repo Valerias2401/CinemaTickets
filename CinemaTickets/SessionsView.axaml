@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CinemaTickets.SessionsView">
+
+    <StackPanel Spacing="20">
+
+        <TextBlock x:Name="MovieTitle"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Foreground="#9D174D"/>
+
+        <TextBlock Text="Выберите дату и время сеанса"
+                   FontSize="16"
+                   Foreground="#BE185D"/>
+
+        <ScrollViewer Height="300">
+
+            <StackPanel x:Name="SessionsPanel"
+                        Spacing="10"/>
+
+        </ScrollViewer>
+
+        <TextBlock x:Name="SelectedText"
+                   Text="Сеанс не выбран"
+                   Foreground="#9D174D"
+                   FontSize="15"/>
+
+        <Button x:Name="ChooseSeatButton"
+                Content="Выбрать место"
+                Click="ChooseSeat_Click"
+                IsEnabled="False"
+                Background="#DB2777"
+                Foreground="White"
+                CornerRadius="12"
+                Padding="25,12"
+                FontSize="16"
+                HorizontalAlignment="Left"/>
+
+    </StackPanel>
+</UserControl>
