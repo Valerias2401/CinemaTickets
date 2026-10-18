@@ -1,15 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Microsoft.EntityFrameworkCore;
 using CinemaTickets.Models;
+using CinemaTickets.Views;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace CinemaTickets;
 
@@ -139,55 +140,32 @@ public partial class MainWindow : Window
     }
 
 
-    private async Task ShowMoviesAsync()
+
+    private Task ShowMoviesAsync()
     {
-        int request = ++navigationVersion;
+        navigationVersion++;
 
         SetPage(
             "Афиша",
             "Выбирай историю по настроению",
             MoviesButton);
 
-        MoviesPage.IsVisible = true;
-        PageHost.IsVisible = false;
+        MoviesPage.IsVisible = false;
 
-        ResultsText.Text = "Загрузка фильмов...";
-        MoviesPanel.Children.Clear();
+        PageHost.IsVisible = true;
 
-        try
+        var moviesView = new MoviesView();
+
+        moviesView.MovieSelected += async movie =>
         {
-            await using var db = _createDb();
+            await ShowSessionsAsync(movie);
+        };
 
-            var loadedMovies = await db.Set<Movie>()
-                .AsNoTracking()
-                .OrderBy(m => m.Title)
-                .ToListAsync();
+        PageHost.Content = moviesView;
 
-            if (request != navigationVersion)
-                return;
-
-            movies.Clear();
-            movies.AddRange(loadedMovies);
-
-            RenderMovies();
-        }
-        catch (Exception ex)
-        {
-            if (request != navigationVersion)
-                return;
-
-            Debug.WriteLine(ex);
-
-            ResultsText.Text = "Ошибка загрузки";
-
-            MoviesPanel.Children.Clear();
-
-            MoviesPanel.Children.Add(
-                CreateMessage(
-                    "Не удалось загрузить фильмы. " +
-                    "Проверьте подключение к PostgreSQL."));
-        }
+        return Task.CompletedTask;
     }
+
 
     private void SearchBox_TextChanged(
         object? sender,
