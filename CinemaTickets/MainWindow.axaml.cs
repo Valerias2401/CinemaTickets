@@ -1,4 +1,3 @@
-
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -377,9 +376,9 @@ public partial class MainWindow : Window
     }
 
 
-    private void ShowSeats(Session session)
+    private async void ShowSeats(Session session)
     {
-        navigationVersion++;
+        int request = ++navigationVersion;
 
         SectionTitle.Text = "Выбор места";
 
@@ -389,11 +388,55 @@ public partial class MainWindow : Window
         MoviesPage.IsVisible = false;
         PageHost.IsVisible = true;
 
-        // Позже подключим SeatsView Вики
         PageHost.Content = CreateMessage(
-            $"Выбран сеанс: {session.StartTime:dd.MM.yyyy HH:mm}\n" +
-            $"Цена билета: {session.TicketPrice:0.00} ₽\n\n" +
-            "Здесь будет схема зала 5×8.");
+            "Загружаем схему зала...");
+
+        try
+        {
+            var service =
+                new CinemaTickets.Services.SeatService(_createDb);
+
+            var data = await service.LoadAsync(session.Id);
+
+            if (request != navigationVersion)
+                return;
+
+            var view = new SeatsView(
+                selectedMovie?.Title ?? "",
+                session,
+                data.Seats,
+                data.OccupiedSeatIds);
+
+            view.SeatsConfirmed += (confirmedSession, seats) =>
+            {
+                navigationVersion++;
+
+                SectionTitle.Text = "Оформление билета";
+
+                var places = seats.Select(s =>
+                    $"ряд {s.RowNumber}, место {s.SeatNumber}");
+
+                // Позже подключим оформление билета.
+                // Сеанс и места уже переданы: confirmedSession, seats.
+                PageHost.Content = CreateMessage(
+                    $"Сеанс: {confirmedSession.StartTime:dd.MM.yyyy HH:mm}\n" +
+                    $"Места: {string.Join("; ", places)}\n\n" +
+                    "Здесь будет оформление билета.");
+            };
+
+            PageHost.Content = view;
+        }
+        catch (Exception ex)
+        {
+            if (request != navigationVersion)
+                return;
+
+            Debug.WriteLine(ex);
+
+            PageHost.Content = CreateMessage(
+                "Не удалось загрузить схему зала. " +
+                "Проверьте подключение к PostgreSQL.");
+        }
     }
 
 
