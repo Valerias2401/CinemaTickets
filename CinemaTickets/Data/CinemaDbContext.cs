@@ -55,7 +55,7 @@ namespace CinemaTickets.Data
             if (!optionsBuilder.IsConfigured)
             {
                 optionsBuilder.UseNpgsql(
-                    "Host=localhost;Port=5432;Database=cinema_tickets;Username=postgres;Password=1234"
+                    "Host=localhost;Port=5432;Database=cinema_tickets;Username=postgres;Password=0325"
                 );
             }
         }

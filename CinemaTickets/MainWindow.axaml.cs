@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -399,23 +399,45 @@ public partial class MainWindow : Window
     }
 
 
-    private void ShowSeats(Session session)
+    private async void ShowSeats(Session session)
     {
         navigationVersion++;
 
         SectionTitle.Text = "Выбор места";
-
-        SectionSubtitle.Text =
-            $"Сеанс {session.StartTime:dd.MM.yyyy HH:mm}";
+        SectionSubtitle.Text = $"Сеанс {session.StartTime:dd.MM.yyyy HH:mm}";
 
         MoviesPage.IsVisible = false;
         PageHost.IsVisible = true;
 
-        // Позже подключим SeatsView Вики
-        PageHost.Content = CreateMessage(
-            $"Выбран сеанс: {session.StartTime:dd.MM.yyyy HH:mm}\n" +
-            $"Цена билета: {session.TicketPrice:0.00} ₽\n\n" +
-            "Здесь будет схема зала 5×8.");
+        PageHost.Content = CreateMessage("ТЕСТ: берём первое свободное место...");
+
+        try
+        {
+            await using var db = _createDb();
+
+            var seat = await db.Set<Seat>()
+                .Where(s => !db.Set<Ticket>().Any(t =>
+                    t.SessionId == session.Id && t.SeatId == s.Id))
+                .OrderBy(s => s.RowNumber).ThenBy(s => s.SeatNumber)
+                .FirstOrDefaultAsync();
+
+            if (seat == null)
+            {
+                PageHost.Content = CreateMessage("Свободных мест нет (или таблица Seats пустая).");
+                return;
+            }
+
+            var w = new PurchaseWindow(_createDb, session, seat);
+            bool bought = await w.ShowDialog<bool>(this);
+
+            PageHost.Content = CreateMessage(
+                bought ? "Куплено! Открой раздел «Билеты»." : "Покупка отменена.");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            PageHost.Content = CreateMessage("Ошибка: " + ex.Message);
+        }
     }
 
 
@@ -423,17 +445,12 @@ public partial class MainWindow : Window
     {
         navigationVersion++;
 
-        SetPage(
-            "Билеты",
-            "Все купленные билеты",
-            TicketsButton);
+        SetPage("Билеты", "Все купленные билеты", TicketsButton);
 
         MoviesPage.IsVisible = false;
         PageHost.IsVisible = true;
 
-        // Позже подключим TicketsView Алсу
-        PageHost.Content = CreateMessage(
-            "Здесь будет список купленных билетов.");
+        PageHost.Content = new TicketsView(_createDb);
     }
 
     private Control CreateMessage(string message)
