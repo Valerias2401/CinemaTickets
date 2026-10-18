@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -407,21 +407,20 @@ public partial class MainWindow : Window
                 data.Seats,
                 data.OccupiedSeatIds);
 
-            view.SeatsConfirmed += (confirmedSession, seats) =>
+            view.SeatsConfirmed += async (confirmedSession, seats) =>
             {
-                navigationVersion++;
+                var window = new PurchaseWindow(_createDb, confirmedSession, seats);
 
-                SectionTitle.Text = "Оформление билета";
+                bool bought = await window.ShowDialog<bool>(this);
 
-                var places = seats.Select(s =>
-                    $"ряд {s.RowNumber}, место {s.SeatNumber}");
-
-                // Позже подключим оформление билета.
-                // Сеанс и места уже переданы: confirmedSession, seats.
-                PageHost.Content = CreateMessage(
-                    $"Сеанс: {confirmedSession.StartTime:dd.MM.yyyy HH:mm}\n" +
-                    $"Места: {string.Join("; ", places)}\n\n" +
-                    "Здесь будет оформление билета.");
+                if (bought)
+                {
+                    ShowTickets();            // куплено: показываем билеты
+                }
+                else
+                {
+                    ShowSeats(confirmedSession); // отмена/ошибка: перерисовать схему, свежие занятые места
+                }
             };
 
             PageHost.Content = view;
@@ -452,9 +451,7 @@ public partial class MainWindow : Window
         MoviesPage.IsVisible = false;
         PageHost.IsVisible = true;
 
-        // Позже подключим TicketsView Алсу
-        PageHost.Content = CreateMessage(
-            "Здесь будет список купленных билетов.");
+        PageHost.Content = new TicketsView(_createDb);
     }
 
     private Control CreateMessage(string message)
