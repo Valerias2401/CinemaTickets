@@ -1,0 +1,95 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CinemaTickets.Views.MoviesView"
+             Background="#FFF8FC"
+             Padding="40,34,28,0">
+
+  <UserControl.Styles>
+    <Style Selector="Button.pink">
+      <Setter Property="Background" Value="#BE185D"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderBrush" Value="#BE185D"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="18,10"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.pink:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="White"/>
+      <Setter Property="Foreground" Value="#BE185D"/>
+      <Setter Property="BorderBrush" Value="#BE185D"/>
+    </Style>
+
+    <Style Selector="Button.outline">
+      <Setter Property="Background" Value="White"/>
+      <Setter Property="Foreground" Value="#BE185D"/>
+      <Setter Property="BorderBrush" Value="#FBCFE8"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="8,9"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.outline:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#FFF0F7"/>
+      <Setter Property="Foreground" Value="#BE185D"/>
+      <Setter Property="BorderBrush" Value="#BE185D"/>
+    </Style>
+
+    <Style Selector="Button.ghost">
+      <Setter Property="Background" Value="#33FFFFFF"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="16"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="FontSize" Value="13"/>
+    </Style>
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#99BE123C"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,26">
+
+      <StackPanel Grid.Column="0" Spacing="6" VerticalAlignment="Center">
+        <TextBlock Text="✦  PINK CINEMA" FontSize="12" FontWeight="SemiBold"
+                   LetterSpacing="3" Foreground="#BE185D"/>
+        <TextBlock Text="Афиша" FontSize="40" FontWeight="ExtraBold" Foreground="#831843"/>
+        <Border Width="64" Height="6" CornerRadius="3" HorizontalAlignment="Left">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+              <GradientStop Color="#BE185D" Offset="0"/>
+              <GradientStop Color="#F9A8D4" Offset="1"/>
+            </LinearGradientBrush>
+          </Border.Background>
+        </Border>
+        <TextBlock x:Name="StatusText" FontSize="14" Foreground="#AD648A"
+                   TextWrapping="Wrap" Margin="0,4,0,0"/>
+      </StackPanel>
+
+      <TextBox Grid.Column="1" x:Name="SearchBox"
+               Width="250" Height="44" Margin="0,0,12,0"
+               VerticalAlignment="Center"
+               VerticalContentAlignment="Center"
+               Watermark="Поиск фильма..."
+               Background="White" Foreground="#831843"
+               BorderBrush="#F0D2E1" CornerRadius="12"
+               Padding="14,0"/>
+
+      <Button Grid.Column="2" x:Name="AddButton" Classes="pink"
+              Height="44" VerticalAlignment="Center"
+              Content="+ Добавить фильм"/>
+    </Grid>
+
+    <ScrollViewer Grid.Row="1"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+      <WrapPanel x:Name="MoviesPanel" Orientation="Horizontal" Margin="0,0,0,8"/>
+    </ScrollViewer>
+
+  </Grid>
+</UserControl>
