@@ -1,0 +1,120 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CinemaTickets.SeatsView">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Auto">
+
+        <StackPanel Spacing="20">
+
+            <TextBlock x:Name="SessionTitle"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="#9D174D"/>
+
+            <TextBlock x:Name="FreeSeatsText"
+                       FontSize="16"
+                       Foreground="#BE185D"/>
+
+            <StackPanel HorizontalAlignment="Left"
+                        Spacing="18">
+
+                <Border Height="30"
+                        Background="#FBCFE8"
+                        CornerRadius="12">
+
+                    <TextBlock Text="ЭКРАН"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="#9D174D"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+
+                </Border>
+
+                <StackPanel x:Name="SeatsPanel"
+                            Spacing="8"/>
+
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal"
+                        Spacing="24">
+
+                <StackPanel Orientation="Horizontal"
+                            Spacing="8">
+
+                    <Border Width="22"
+                            Height="22"
+                            CornerRadius="6"
+                            Background="White"
+                            BorderBrush="#F9A8D4"
+                            BorderThickness="1"/>
+
+                    <TextBlock Text="Свободно"
+                               FontSize="13"
+                               Foreground="#965A7A"
+                               VerticalAlignment="Center"/>
+
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal"
+                            Spacing="8">
+
+                    <Border Width="22"
+                            Height="22"
+                            CornerRadius="6"
+                            Background="#E9DCE4"
+                            BorderBrush="#E9DCE4"
+                            BorderThickness="1"/>
+
+                    <TextBlock Text="Занято"
+                               FontSize="13"
+                               Foreground="#965A7A"
+                               VerticalAlignment="Center"/>
+
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal"
+                            Spacing="8">
+
+                    <Border Width="22"
+                            Height="22"
+                            CornerRadius="6"
+                            Background="#BE185D"
+                            BorderBrush="#9D174D"
+                            BorderThickness="1"/>
+
+                    <TextBlock Text="Выбрано"
+                               FontSize="13"
+                               Foreground="#965A7A"
+                               VerticalAlignment="Center"/>
+
+                </StackPanel>
+
+            </StackPanel>
+
+            <TextBlock x:Name="SelectedText"
+                       Text="Места не выбраны"
+                       Foreground="#9D174D"
+                       FontSize="15"
+                       TextWrapping="Wrap"/>
+
+            <TextBlock x:Name="PriceText"
+                       Foreground="#BE185D"
+                       FontSize="15"
+                       FontWeight="SemiBold"/>
+
+            <Button x:Name="ContinueButton"
+                    Content="Продолжить"
+                    Click="Continue_Click"
+                    IsEnabled="False"
+                    Background="#DB2777"
+                    Foreground="White"
+                    CornerRadius="12"
+                    Padding="25,12"
+                    FontSize="16"
+                    HorizontalAlignment="Left"/>
+
+        </StackPanel> 
+    </ScrollViewer>
+</UserControl>
